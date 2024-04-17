@@ -1,7 +1,6 @@
 #include "fs.h"
 
 unsigned char* fs;
-int debug = 0;
 
 void mapfs(int fd){
   if ((fs= mmap(NULL, FSSIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == NULL){
@@ -296,43 +295,6 @@ void print_directory_entries(int dir_inode, int indent)
     free(ind);
     free(seg);
 }
-// {
-//     // Open the file system file
-//     FILE *file = fopen("segments/DIR_1", "rb+");
-//     if (!file) {
-//         perror("Error opening file system file");
-//         return;
-//     }
-//     printf("Root Directory:\n");
-//     // Read the file system from file
-//     Segment *seg= (Segment *)malloc(sizeof(Segment));
-//     fread(seg, sizeof(Segment), 1, file);
-
-//     // Close the file system file
-//     fclose(file);
-
-//     // Check if the root directory is valid
-//     if (seg->type != DIR) {
-//         printf("Error: Root directory not found\n");
-//         return;
-//     }
-
-//     // Iterate over root directory entries and print them
-//     printf("Name\t\tInode Number\tType\n");
-//     DirectoryEntry *entry = (DirectoryEntry *)malloc(sizeof(DirectoryEntry));
-//     for (int i = 0; i < ((BLOCK_SIZE/4)-4); i++) 
-//     {
-//         // printf("inode %d\n", seg->inodes[0].blocks[i]);
-//         if (seg->inodes[0].blocks[i] != -1) 
-//         {
-//             printf("Found entry in block %d\n", seg->inodes[0].blocks[i]);
-//             memcpy(entry, seg->blocks[seg->inodes[0].blocks[i]].data, sizeof(DirectoryEntry));
-//             printf("%s\t\t%d\t\t%s\n", entry->name, entry->inodenum, entry->type == DIR ? "Dir" : "Data");
-//         }
-//     }
-//     free(seg);
-//     free(entry);
-// }
 
 
 void lsfs()
@@ -507,10 +469,7 @@ int create_entry(const char* name, int old_inode)
         perror("Error opening file system file");
         return -1;
     }
-    if(debug)
-    {
-        printf("Creating entry of '%s' in directory of inode %d\n", name, old_inode);
-    }
+
 
     Segment *seg= (Segment *)malloc(sizeof(Segment));
     Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
