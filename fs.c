@@ -9,10 +9,7 @@ void mapfs(int fd){
   }
 }
 
-void print_entries()
-{
-    debug = 1;
-}
+
 
 void unmapfs(){
   munmap(fs, FSSIZE);
