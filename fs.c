@@ -54,20 +54,20 @@ void print_manifest() {
 }
 
 
-void initialize_manifest()
+char * initialize_manifest()
 {
     // Dynamically allocate memory for the manifest
     
     Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
     if (mf == NULL) {
         perror("Error allocating memory for manifest");
-        return;
+        return NULL;
     }
     mf->MH.numdirectorysegs = 1;
     mf->MH.numdatasegs = 0;
     mf->MH.numinodes = INODESPERSEG;
     mf->MH.numsegs = 1;
-    char dir_name[255]; 
+    char* dir_name = (char *)malloc(255);
     sprintf(dir_name, "DIR_%d", mf->MH.numdirectorysegs);
     strcpy(mf->entries[0].name, dir_name);
     mf->entries[0].type = DIR;
@@ -75,29 +75,74 @@ void initialize_manifest()
     if (!file) {
         perror("Error opening file");
         free(mf); // Free allocated memory before returning
-        return;
+        return NULL;
     }
     fseek(file, 0, SEEK_SET);
     fwrite(mf, sizeof(Manifest), 1, file);
     fclose(file);
     // memcpy(fs, &mf, sizeof(Manifest));
     free(mf);
+    return dir_name;
 }
 
-void create_segment(char*seg_name, int type, int inode)
+char* update_manifest(int type)
+{
+    char * seg_name;
+    Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
+    FILE *manifest = fopen("segments/manifest", "rb+");
+    if (!manifest) {
+        perror("Error opening file system file");
+        return NULL;
+    }
+    fread(mf, sizeof(Manifest), 1, manifest);
+    mf->MH.numsegs++;
+    if(type == DIR)
+    {
+        mf->MH.numdirectorysegs++;
+        seg_name = (char *)malloc(255);
+        sprintf(seg_name, "DIR_%d", mf->MH.numdirectorysegs);
+    }
+    else
+    {
+        mf->MH.numdatasegs++;
+        seg_name = (char *)malloc(255);
+        sprintf(seg_name, "DATA_%d", mf->MH.numdatasegs);
+    }
+    
+    mf->MH.numinodes += INODESPERSEG;
+    mf->entries[mf->MH.numsegs - 1].type = type;
+    strcpy(mf->entries[mf->MH.numsegs - 1].name, seg_name);
+    fseek(manifest, 0, SEEK_SET);
+    fwrite(mf, sizeof(Manifest), 1, manifest);
+    fclose(manifest);
+    free(mf);
+    return seg_name;
+}
+
+void create_segment(int type, int inode)
 {
     char seg_path[256];
+    char*seg_name;
+    if(inode == 0)
+    {
+        seg_name = initialize_manifest();
+    }
+    else
+    {
+        seg_name = update_manifest(type);
+    }
     snprintf(seg_path, sizeof(seg_path), "%s/%s", "segments", seg_name);
     Segment *seg= (Segment *)malloc(sizeof(Segment));
     if (seg== NULL) {
         perror("Error allocating memory for file system");
         return;
     }
+    
     seg->type = type;
     seg->SB.blocksize = BLOCK_SIZE;
     seg->SB.segsize = SEGMENT_SIZE;
     seg->SB.inodesperseg = INODESPERSEG;
-    seg->SB.blockid = 0; // Assuming block id starts from 0
+    seg->SB.blockid = 0; 
     seg->SB.blocksperseg = BLOCKSPERSEG;
     memset(seg->FBL.bitmap, -1, sizeof(seg->FBL.bitmap));
      // Initialize inodes and blocks (if needed)
@@ -110,6 +155,7 @@ void create_segment(char*seg_name, int type, int inode)
             seg->inodes[i].blocks[j] = -1;
         }
     }
+    //For not setting node for files that only need blocks
     if (inode != -1)
     {
         seg->inodes[inode].inuse = 1;
@@ -138,8 +184,8 @@ void formatfs()
     printf("Formatting the file system\n");
     initialize_manifest();
     print_manifest();
-    create_segment("DIR_1", DIR, 0);
-    print_manifest();
+    create_segment(DIR, 0);
+    // print_manifest();
     // Segment *seg= (Segment *)malloc(sizeof(Segment));
     // if (seg== NULL) {
     //     perror("Error allocating memory for file system");
@@ -210,8 +256,7 @@ void print_directory_entries(int dir_inode, int indent)
     char filepath[255];
     char* seg_name = get_segname(segment_id);
     snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
-    printf("Path: %s\n", filepath);
-    FILE *file = fopen(filepath, "rb+");
+    FILE *file = fopen(filepath, "rb");
     if (!file) {
         perror("Error opening file system file");
         return;
@@ -221,8 +266,11 @@ void print_directory_entries(int dir_inode, int indent)
     fclose(file);
     inode *ind = (inode *)malloc(sizeof(inode));
     *ind = seg->inodes[inode_index];
-    for (int i; i < (BLOCK_SIZE/4)-4; i++)
+    // printf("For Inode: %d\n", dir_inode);
+    for (int i = 0; i < ((BLOCK_SIZE/4)-4); i++)
     {
+        // printf("Block vaues = %d\n", ind->blocks[i]);
+
         if(ind->blocks[i] != -1)
         {
             DirectoryEntry *entry_ptr = (DirectoryEntry *)malloc(sizeof(DirectoryEntry));
@@ -233,10 +281,11 @@ void print_directory_entries(int dir_inode, int indent)
                 {
                     printf("  ");
                 }
-                printf("%s\t", entry_ptr->name);
-                printf("%s\t", entry_ptr->type == DIR ? "Dir" : "Data");
-                printf("t%d\t", entry_ptr->inodenum);
-                // printf("Inuse: %d\n", entry_ptr->inuse);
+                printf("|-");
+                printf("%s\n", entry_ptr->name);
+                // printf("%d\t", entry_ptr->inodenum);
+                // printf("%s\n", entry_ptr->type == DIR ? "Dir" : "Data");
+                // printf("%d\n", entry_ptr->inuse);
                 if(entry_ptr->type == DIR)
                 {
                     print_directory_entries(entry_ptr->inodenum, indent + 1);
@@ -287,7 +336,7 @@ void print_directory_entries(int dir_inode, int indent)
 
 
 void lsfs()
-{   
+{       
     print_directory_entries(0, 0);
 }
 
@@ -458,7 +507,11 @@ int create_entry(const char* name, int old_inode)
         perror("Error opening file system file");
         return -1;
     }
-    printf("Creating entry in directory of %s inode %d\n", name, old_inode);
+    if(debug)
+    {
+        printf("Creating entry of '%s' in directory of inode %d\n", name, old_inode);
+    }
+
     Segment *seg= (Segment *)malloc(sizeof(Segment));
     Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
     char* path;
@@ -490,12 +543,13 @@ int create_entry(const char* name, int old_inode)
         }
         for( j = 0; j < INODESPERSEG; j++)
         {
-            printf("inode use: %d\n", seg->inodes[j].inuse);
             if (seg->inodes[j].inuse == 0)
             {
+                printf("Found unused inode at segment %d, inode %d\n", i, j);
                 found_unused_inode = 1;
                 break;
             }
+            printf("inode %d in use: ", j);
         }
         fclose(file);
         if(found_unused_inode)
@@ -509,6 +563,7 @@ int create_entry(const char* name, int old_inode)
         printf("Found unused inode at segment %d, inode %d\n", i, j);
         //Registering the directory in the segment inode
         new_inode = i * 10 + j;
+        printf("New inode: %d\n", new_inode);
         seg->inodes[j].inuse = 1;
         seg->inodes[j].type = DIR;
         seg_nam2 = get_segname(i);
@@ -537,12 +592,15 @@ int create_entry(const char* name, int old_inode)
         {
             if(seg->FBL.bitmap[k] == -1)
             {
+                printf("Found free block at %d\n", k);
                 seg->FBL.bitmap[k] = 0;
                 break;
             }
         }
 
         seg->inodes[inode_index].size = k * sizeof(DirectoryEntry);
+
+        //Flagging the block used for that inode
         for (int x = 0; x < (BLOCK_SIZE/4)-4; x++)
         {
             if(seg->inodes[inode_index].blocks[x] == -1)
@@ -551,10 +609,16 @@ int create_entry(const char* name, int old_inode)
                 break;
             }
         }
+
+        printf("\n");
+        printf("inode for new entry: %d\n", new_entry->inodenum);
+
         // seg->inodes[inode_index].blocks[0] = k;
-        memccpy(seg->blocks[k].data, new_entry, sizeof(DirectoryEntry), 1);
+        memcpy(seg->blocks[k].data, new_entry, sizeof(DirectoryEntry));
+        
         char *seg_name3 = get_segname(segment_id);
         sprintf(path, "segments/%s", seg_name3);
+
         FILE *file2 = fopen(path, "rb+");
         if (!file2) 
         {
@@ -562,6 +626,11 @@ int create_entry(const char* name, int old_inode)
             return -1;
         }
         fwrite(seg, sizeof(Segment), 1, file2);
+        // printf("Entry details: %s\n", new_entry->name);
+        // printf("Entry details: %d\n", new_entry->inodenum);
+        // printf("Entry details: %d\n", new_entry->type);
+        // printf("Entry details: %d\n", new_entry->inuse);
+
         free(new_entry);
         fclose(file);
         fclose(file2);
@@ -607,7 +676,6 @@ char** parse_path(const char* path, int* num_elements) {
 }
 
 
-
 int search_inode_in_directory_entry(int current_inode, char* name)
 {
     Segment *seg= (Segment *)malloc(sizeof(Segment));
@@ -616,7 +684,7 @@ int search_inode_in_directory_entry(int current_inode, char* name)
     char filepath[255];
     char* seg_name = get_segname(segment_no);
     snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
-    FILE *file = fopen(filepath, "rb+");
+    FILE *file = fopen(filepath, "rb");
     if (!file) {
         perror("Error opening file system file");
         return -1;
@@ -629,7 +697,7 @@ int search_inode_in_directory_entry(int current_inode, char* name)
     inode *ind = (inode *)malloc(sizeof(inode));
     *ind = seg->inodes[inode_index];
 
-    for (int i; i < (BLOCK_SIZE/4)-4; i++)
+    for (int i = 0; i < (BLOCK_SIZE/4)-4; i++)
     {
         if(ind->blocks[i] != -1)
         {
@@ -637,6 +705,7 @@ int search_inode_in_directory_entry(int current_inode, char* name)
             memcpy(entry_ptr, &(seg->blocks[ind->blocks[i]]), sizeof(DirectoryEntry));
             if(strcmp(entry_ptr->name, name) == 0)
             {
+                // printf("Found search entry in block %d with name: %s and inode %d\n", ind->blocks[i], entry_ptr->name, entry_ptr->inodenum);
                 new_inode = entry_ptr->inodenum;
                 break;
             }
@@ -661,7 +730,7 @@ void addfilefs(char* fspath, char *fpath)
 
     int current_inode = 0;
     int new_inode = -1;
-    FILE *file = fopen("segments/DIR_1", "rb+");
+    FILE *file = fopen("segments/DIR_1", "rb");
     if (!file) {
         perror("Error opening file system file");
         return;

@@ -64,12 +64,12 @@ int main(int argc, char** argv){
         // Check the second argument for the options
         if (strcmp(argv[1], "-l") == 0) 
         {
-            printf("Option -l is present\n");
+            // printf("Option -l is present\n");
             list = 1;
 
         } else if (strcmp(argv[1], "-a") == 0) 
         {
-            printf("Option -a is present\n");
+            // printf("Option -a is present\n");
             add = 1;
             // toadd = strdup(optarg);
             if (argc >= 3) 
@@ -85,10 +85,10 @@ int main(int argc, char** argv){
               // filefsname = 1;
               fpath = strdup(argv[4]);
             }
-            if (strcmp(argv[5],"-d") == 0)
-            {
-              print_entries();
-            }
+            // if (strcmp(argv[5],"-d") == 0)
+            // {
+            //   print_entries();
+            // }
         } 
         else if (strcmp(argv[1], "-r") == 0) 
         {
