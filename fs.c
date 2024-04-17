@@ -184,52 +184,106 @@ void loadfs()
 {
 
 }
-
-
-void print_root_directory() 
+char * get_segname(int seg_id)
 {
-    // Open the file system file
-    FILE *file = fopen("segments/DIR_1", "rb+");
+    Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
+    FILE *manifest = fopen("segments/manifest", "rb+");
+    if (!manifest) {
+        perror("Error opening file system file");
+        return NULL;
+    }
+    fread(mf, sizeof(Manifest), 1, manifest);
+    fclose(manifest);
+    return mf->entries[seg_id].name;
+}
+
+void print_directory_entries(int dir_inode, int indent)
+{
+    Segment *seg= (Segment *)malloc(sizeof(Segment));
+    int segment_id = dir_inode / 10;
+    int inode_index = dir_inode % 10;
+    char filepath[255];
+    char* seg_name = get_segname(segment_id);
+    snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+    printf("Path: %s\n", filepath);
+    FILE *file = fopen(filepath, "rb+");
     if (!file) {
         perror("Error opening file system file");
         return;
     }
-    printf("Root Directory:\n");
-    // Read the file system from file
-    Segment *seg= (Segment *)malloc(sizeof(Segment));
+    fseek(file, 0, SEEK_SET);
     fread(seg, sizeof(Segment), 1, file);
-
-    // Close the file system file
     fclose(file);
-
-    // Check if the root directory is valid
-    if (seg->type != DIR) {
-        printf("Error: Root directory not found\n");
-        return;
-    }
-
-    // Iterate over root directory entries and print them
-    printf("Name\t\tInode Number\tType\n");
-    DirectoryEntry *entry = (DirectoryEntry *)malloc(sizeof(DirectoryEntry));
-    for (int i = 0; i < ((BLOCK_SIZE/4)-4); i++) 
+    inode *ind = (inode *)malloc(sizeof(inode));
+    *ind = seg->inodes[inode_index];
+    for (int i; i < (BLOCK_SIZE/4)-4; i++)
     {
-        // printf("inode %d\n", seg->inodes[0].blocks[i]);
-        if (seg->inodes[0].blocks[i] != -1) 
+        if(ind->blocks[i] != -1)
         {
-            printf("Found entry in block %d\n", seg->inodes[0].blocks[i]);
-            memcpy(entry, seg->blocks[seg->inodes[0].blocks[i]].data, sizeof(DirectoryEntry));
-            printf("%s\t\t%d\t\t%s\n", entry->name, entry->inodenum, entry->type == DIR ? "Dir" : "Data");
+            DirectoryEntry *entry_ptr = (DirectoryEntry *)malloc(sizeof(DirectoryEntry));
+            memcpy(entry_ptr, &(seg->blocks[ind->blocks[i]]), sizeof(DirectoryEntry));
+            if(entry_ptr -> inuse == 1)
+            {
+                for (int j = 0; j < indent; j++)
+                {
+                    printf("  ");
+                }
+                printf("%s\t", entry_ptr->name);
+                printf("%s\t", entry_ptr->type == DIR ? "Dir" : "Data");
+                printf("t%d\t", entry_ptr->inodenum);
+                // printf("Inuse: %d\n", entry_ptr->inuse);
+                if(entry_ptr->type == DIR)
+                {
+                    print_directory_entries(entry_ptr->inodenum, indent + 1);
+                }
+            }
         }
     }
+    free(ind);
     free(seg);
-    free(entry);
 }
+// {
+//     // Open the file system file
+//     FILE *file = fopen("segments/DIR_1", "rb+");
+//     if (!file) {
+//         perror("Error opening file system file");
+//         return;
+//     }
+//     printf("Root Directory:\n");
+//     // Read the file system from file
+//     Segment *seg= (Segment *)malloc(sizeof(Segment));
+//     fread(seg, sizeof(Segment), 1, file);
+
+//     // Close the file system file
+//     fclose(file);
+
+//     // Check if the root directory is valid
+//     if (seg->type != DIR) {
+//         printf("Error: Root directory not found\n");
+//         return;
+//     }
+
+//     // Iterate over root directory entries and print them
+//     printf("Name\t\tInode Number\tType\n");
+//     DirectoryEntry *entry = (DirectoryEntry *)malloc(sizeof(DirectoryEntry));
+//     for (int i = 0; i < ((BLOCK_SIZE/4)-4); i++) 
+//     {
+//         // printf("inode %d\n", seg->inodes[0].blocks[i]);
+//         if (seg->inodes[0].blocks[i] != -1) 
+//         {
+//             printf("Found entry in block %d\n", seg->inodes[0].blocks[i]);
+//             memcpy(entry, seg->blocks[seg->inodes[0].blocks[i]].data, sizeof(DirectoryEntry));
+//             printf("%s\t\t%d\t\t%s\n", entry->name, entry->inodenum, entry->type == DIR ? "Dir" : "Data");
+//         }
+//     }
+//     free(seg);
+//     free(entry);
+// }
 
 
 void lsfs()
 {   
-    // print_root_directory();
-    
+    print_directory_entries(0, 0);
 }
 
 int find_free_inode(Segment *fs) {
@@ -393,8 +447,8 @@ int find_free_inode(Segment *fs) {
 int create_entry(const char* name, int old_inode)
 {
 
-   FILE *file = fopen("EXFS", "rb+");
-    if (!file) 
+   FILE *manifest = fopen("segments/manifest", "rb+");
+    if (!manifest) 
     {
         perror("Error opening file system file");
         return -1;
@@ -402,19 +456,28 @@ int create_entry(const char* name, int old_inode)
     printf("Creating entry in directory of %s inode %d\n", name, old_inode);
     Segment *seg= (Segment *)malloc(sizeof(Segment));
     Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
-    fread(mf, sizeof(Manifest), 1, file);
+    char* path;
+    fread(mf, sizeof(Manifest), 1, manifest);
     printf("Number of segments: %d\n", mf->MH.numsegs);
+    fclose(manifest);
     int i;
     int j;
     int new_inode = -1;
     int found_unused_inode = 0;
-    int segment_no = old_inode / 10;
+    int segment_id = old_inode / 10;
     int inode_index = old_inode % 10;
+    char* seg_name;
     for (i = 0; i < mf->MH.numsegs; i++)
     {
         printf("Segment %d\n", i);
-        fseek(file, 0, SEEK_SET);
-        fseek(file, sizeof(Manifest) + i * sizeof(Segment), SEEK_SET);
+        seg_name = get_segname(i);
+        sprintf(path, "segments/%s", seg_name);
+        FILE *file = fopen(path, "rb+");
+        if (!file) 
+        {
+            perror("Error opening DIR_ file");
+            return -1;
+        }
         fread(seg, sizeof(Segment), 1, file);
         if(seg->type == DATA)
         {
@@ -429,6 +492,7 @@ int create_entry(const char* name, int old_inode)
                 break;
             }
         }
+        fclose(file);
         if(found_unused_inode)
         {
             break;
@@ -436,16 +500,24 @@ int create_entry(const char* name, int old_inode)
     } 
     if(found_unused_inode)
     {
+        char* seg_nam2;
         printf("Found unused inode at segment %d, inode %d\n", i, j);
+        //Registering the directory in the segment inode
         new_inode = i * 10 + j;
         seg->inodes[j].inuse = 1;
         seg->inodes[j].type = DIR;
-        seg->inodes[j].size = sizeof(Directory);
-        fseek(file, 0, SEEK_SET);
-        fseek(file, sizeof(Manifest) + i * sizeof(Segment), SEEK_SET);
+        seg_nam2 = get_segname(i);
+        // seg->inodes[j].size = sizeof(Directory);
+        sprintf(path, "segments/%s", seg_nam2);
+        FILE *file = fopen(path, "rb+");
+        if (!file) 
+        {
+            perror("Error opening DIR_ file");
+            return -1;
+        }
         fwrite(seg, sizeof(Segment), 1, file);
 
-        //adding an entry in the directory
+        //adding an entry in the directory in the parent directory
         DirectoryEntry *new_entry = (DirectoryEntry *)malloc(sizeof(DirectoryEntry));
         strncpy(new_entry->name, name, sizeof(new_entry->name));
         new_entry->type = DIR; 
@@ -453,19 +525,19 @@ int create_entry(const char* name, int old_inode)
         new_entry->inuse = 1;
         seg->inodes[inode_index].inuse = 1;
         seg->inodes[inode_index].type = DIR;
-        seg->inodes[inode_index].size = sizeof(DirectoryEntry);
 
         //Finding free block and marking it as used
         int k;
         for (k = 0; k < ((SEGMENT_SIZE/BLOCK_SIZE)/8); k++)
         {
-            if(seg->FBL.bitmap[k] != -1)
+            if(seg->FBL.bitmap[k] == -1)
             {
                 seg->FBL.bitmap[k] = 0;
                 break;
             }
         }
 
+        seg->inodes[inode_index].size = k * sizeof(DirectoryEntry);
         for (int x = 0; x < (BLOCK_SIZE/4)-4; x++)
         {
             if(seg->inodes[inode_index].blocks[x] == -1)
@@ -476,16 +548,23 @@ int create_entry(const char* name, int old_inode)
         }
         // seg->inodes[inode_index].blocks[0] = k;
         memccpy(seg->blocks[k].data, new_entry, sizeof(DirectoryEntry), 1);
-        fseek(file, 0, SEEK_SET);
-        fseek(file, sizeof(Manifest) + segment_no * sizeof(Segment), SEEK_SET);
-        fwrite(seg, sizeof(Segment), 1, file);
+        char *seg_name3 = get_segname(segment_id);
+        sprintf(path, "segments/%s", seg_name3);
+        FILE *file2 = fopen(path, "rb+");
+        if (!file2) 
+        {
+            perror("Error opening DIR_ file");
+            return -1;
+        }
+        fwrite(seg, sizeof(Segment), 1, file2);
         free(new_entry);
+        fclose(file);
+        fclose(file2);
     }
     else
     {
         printf("No free inode found\n");
     }
-    fclose(file);
     free(seg);
     free(mf);
     return new_inode;
@@ -522,59 +601,7 @@ char** parse_path(const char* path, int* num_elements) {
     return elements;
 }
 
-void add_entry_to_root_directory(const char* name, int inodenum) 
-{
-    // Open the file system file
-    FILE *file = fopen("EXFS", "rb+");
-    if (!file) 
-    {
-        perror("Error opening file system file");
-        return;
-    }
 
-    // Read the file system from file
-    Segment fs;
-    fseek(file, sizeof(Manifest), SEEK_SET);
-    fread(&fs, sizeof(Segment), 1, file);
-
-
-    // Check if the root directory is valid
-
-    if (fs.type != DIR) {
-        printf("Error: Root directory not found\n");
-        return;
-    }
-
-    Directory root_dir;
-    memcpy(&root_dir, fs.blocks[0].data, sizeof(Directory));
-
-    // Check if the root directory is full
-    if (root_dir.num_entries >= MAX_ENTRIES_PER_BLOCK) {
-        printf("Error: Root directory is full\n");
-        return;
-    }
-
-    // Create a new directory entry
-    DirectoryEntry new_entry;
-    strncpy(new_entry.name, name, sizeof(new_entry.name));
-    new_entry.type = DIR; // Assuming directory type
-    new_entry.inodenum = inodenum; // Assuming inode number for the file
-    new_entry.inuse = 1; // Mark as in use
-
-    // Add the new entry to the root directory
-    root_dir.entries[root_dir.num_entries] = new_entry;
-    root_dir.num_entries++;
-    
-    // Write the updated root directory back to the file system
-    memcpy(fs.blocks[0].data, &root_dir, sizeof(Directory));
-    fseek(file, sizeof(Manifest), SEEK_SET);
-    fwrite(&fs, sizeof(Segment), 1, file);
-
-    // Close the file system file
-    fclose(file);
-    printf("Entry '%s' added to the root directory\n", name);
-  
-}
 
 int search_inode_in_directory_entry(int current_inode, char* name)
 {
@@ -582,7 +609,8 @@ int search_inode_in_directory_entry(int current_inode, char* name)
     int segment_no = current_inode / 10;
     int inode_index = current_inode % 10;
     char filepath[255];
-    snprintf(filepath, sizeof(filepath), "DIR_%d", segment_no);
+    char* seg_name = get_segname(segment_no);
+    snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
     FILE *file = fopen(filepath, "rb+");
     if (!file) {
         perror("Error opening file system file");

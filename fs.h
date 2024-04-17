@@ -80,14 +80,14 @@ typedef struct DirectoryEntry{
   int inuse;
 }DirectoryEntry;
 
-typedef struct {
-    char name[255]; // Name of the directory
-    int num_entries; // Number of directory entries
-    DirectoryEntry entries[MAX_ENTRIES_PER_BLOCK]; // Array of directory entries
-    int inodenum; 
-    int inuse;
-    // Add any additional metadata if needed
-} Directory;
+// typedef struct {
+//     char name[255]; // Name of the directory
+//     int num_entries; // Number of directory entries
+//     DirectoryEntry entries[MAX_ENTRIES_PER_BLOCK]; // Array of directory entries
+//     int inodenum; 
+//     int inuse;
+//     // Add any additional metadata if needed
+// } Directory;
 
 typedef struct Segment{
   int type;
