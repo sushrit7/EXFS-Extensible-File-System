@@ -106,5 +106,6 @@ void lsfs();
 void addfilefs(char* fname, char *fpath);
 void removefilefs(char* fname);
 void extractfilefs(char* fname);
+void print_entries();
 
 #endif

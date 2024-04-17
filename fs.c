@@ -1,6 +1,7 @@
 #include "fs.h"
 
 unsigned char* fs;
+int debug = 0;
 
 void mapfs(int fd){
   if ((fs= mmap(NULL, FSSIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == NULL){
@@ -9,6 +10,10 @@ void mapfs(int fd){
   }
 }
 
+void print_entries()
+{
+    debug = 1;
+}
 
 void unmapfs(){
   munmap(fs, FSSIZE);

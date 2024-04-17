@@ -85,6 +85,10 @@ int main(int argc, char** argv){
               // filefsname = 1;
               fpath = strdup(argv[4]);
             }
+            if (strcmp(argv[5],"-d") == 0)
+            {
+              print_entries();
+            }
         } 
         else if (strcmp(argv[1], "-r") == 0) 
         {
