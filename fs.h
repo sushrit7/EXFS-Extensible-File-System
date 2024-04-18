@@ -22,7 +22,8 @@ extern unsigned char* fs;
 #define MAX_FILENAME_LEN 256
 #define MAX_ENTRIES_PER_BLOCK 1
 #define INODESPERSEG 10
-#define BLOCKSPERSEG (SEGMENT_SIZE / BLOCK_SIZE)
+#define BLOCKSPERSEG ((SEGMENT_SIZE - sizeof(Superblock) - sizeof(freeblocklist) - sizeof(inode) * INODESPERSEG) / sizeof(block))
+#define MAX_ENTRIES 50
 
 enum EntryType 
 {
@@ -44,7 +45,7 @@ typedef struct Manifestentry{
 
 typedef struct Manifest{
   Manifestheader MH;
-  Manifestentry entries[50];
+  Manifestentry entries[MAX_ENTRIES];
 }Manifest;
 
 typedef struct Superblock{
@@ -94,7 +95,7 @@ typedef struct Segment{
   Superblock SB;
   freeblocklist FBL;
   inode inodes[INODESPERSEG];
-  block blocks[BLOCKSPERSEG];
+  block blocks[(BLOCK_SIZE/4)-4];
 }Segment;
 
 void initialize_and_write_file_system();

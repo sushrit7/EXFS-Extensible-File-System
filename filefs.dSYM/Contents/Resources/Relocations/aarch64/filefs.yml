@@ -2,30 +2,30 @@
 triple:          'arm64-apple-darwin'
 binary-path:     filefs
 relocations:
-  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _mapfs, symObjAddr: 0x0, symBinAddr: 0x100001C3C, symSize: 0x70 }
-  - { offsetInCU: 0x3F, offset: 0x3F, size: 0x8, addend: 0x0, symName: _debug, symObjAddr: 0x4A0C, symBinAddr: 0x100008000, symSize: 0x0 }
-  - { offsetInCU: 0x69, offset: 0x69, size: 0x8, addend: 0x0, symName: _fs, symBinAddr: 0x100008008, symSize: 0x0 }
-  - { offsetInCU: 0x334, offset: 0x334, size: 0x8, addend: 0x0, symName: _mapfs, symObjAddr: 0x0, symBinAddr: 0x100001C3C, symSize: 0x70 }
-  - { offsetInCU: 0x358, offset: 0x358, size: 0x8, addend: 0x0, symName: _print_entries, symObjAddr: 0x70, symBinAddr: 0x100001CAC, symSize: 0x10 }
-  - { offsetInCU: 0x36D, offset: 0x36D, size: 0x8, addend: 0x0, symName: _unmapfs, symObjAddr: 0x80, symBinAddr: 0x100001CBC, symSize: 0x28 }
-  - { offsetInCU: 0x382, offset: 0x382, size: 0x8, addend: 0x0, symName: _print_manifest, symObjAddr: 0xA8, symBinAddr: 0x100001CE4, symSize: 0x24C }
-  - { offsetInCU: 0x3D0, offset: 0x3D0, size: 0x8, addend: 0x0, symName: _initialize_manifest, symObjAddr: 0x2F4, symBinAddr: 0x100001F30, symSize: 0x15C }
-  - { offsetInCU: 0x414, offset: 0x414, size: 0x8, addend: 0x0, symName: _update_manifest, symObjAddr: 0x450, symBinAddr: 0x10000208C, symSize: 0x1D8 }
-  - { offsetInCU: 0x466, offset: 0x466, size: 0x8, addend: 0x0, symName: _create_segment, symObjAddr: 0x628, symBinAddr: 0x100002264, symSize: 0x2D8 }
-  - { offsetInCU: 0x508, offset: 0x508, size: 0x8, addend: 0x0, symName: _formatfs, symObjAddr: 0x900, symBinAddr: 0x10000253C, symSize: 0x30 }
-  - { offsetInCU: 0x51D, offset: 0x51D, size: 0x8, addend: 0x0, symName: _loadfs, symObjAddr: 0x930, symBinAddr: 0x10000256C, symSize: 0x4 }
-  - { offsetInCU: 0x532, offset: 0x532, size: 0x8, addend: 0x0, symName: _get_segname, symObjAddr: 0x934, symBinAddr: 0x100002570, symSize: 0xA8 }
-  - { offsetInCU: 0x576, offset: 0x576, size: 0x8, addend: 0x0, symName: _print_directory_entries, symObjAddr: 0x9DC, symBinAddr: 0x100002618, symSize: 0x2BC }
-  - { offsetInCU: 0x66D, offset: 0x66D, size: 0x8, addend: 0x0, symName: _lsfs, symObjAddr: 0xC98, symBinAddr: 0x1000028D4, symSize: 0x1C }
-  - { offsetInCU: 0x683, offset: 0x683, size: 0x8, addend: 0x0, symName: _find_free_inode, symObjAddr: 0xCB4, symBinAddr: 0x1000028F0, symSize: 0xA0 }
-  - { offsetInCU: 0x6CA, offset: 0x6CA, size: 0x8, addend: 0x0, symName: _create_entry, symObjAddr: 0xD54, symBinAddr: 0x100002990, symSize: 0x6F4 }
-  - { offsetInCU: 0x855, offset: 0x855, size: 0x8, addend: 0x0, symName: _parse_path, symObjAddr: 0x1448, symBinAddr: 0x100003084, symSize: 0xB8 }
-  - { offsetInCU: 0x8BB, offset: 0x8BB, size: 0x8, addend: 0x0, symName: _search_inode_in_directory_entry, symObjAddr: 0x1500, symBinAddr: 0x10000313C, symSize: 0x25C }
-  - { offsetInCU: 0x9AF, offset: 0x9AF, size: 0x8, addend: 0x0, symName: _addfilefs, symObjAddr: 0x175C, symBinAddr: 0x100003398, symSize: 0x164 }
-  - { offsetInCU: 0xA5B, offset: 0xA5B, size: 0x8, addend: 0x0, symName: _removefilefs, symObjAddr: 0x18C0, symBinAddr: 0x1000034FC, symSize: 0x10 }
-  - { offsetInCU: 0xA81, offset: 0xA81, size: 0x8, addend: 0x0, symName: _extractfilefs, symObjAddr: 0x18D0, symBinAddr: 0x10000350C, symSize: 0x10 }
-  - { offsetInCU: 0x26, offset: 0xCC1, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x10000351C, symSize: 0x490 }
-  - { offsetInCU: 0x41, offset: 0xCDC, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x10000351C, symSize: 0x490 }
-  - { offsetInCU: 0x158, offset: 0xDF3, size: 0x8, addend: 0x0, symName: _exitusage, symObjAddr: 0x490, symBinAddr: 0x1000039AC, symSize: 0x3C }
-  - { offsetInCU: 0x17C, offset: 0xE17, size: 0x8, addend: 0x0, symName: _zerosize, symObjAddr: 0x4CC, symBinAddr: 0x1000039E8, symSize: 0x54 }
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _mapfs, symObjAddr: 0x0, symBinAddr: 0x1000015EC, symSize: 0x70 }
+  - { offsetInCU: 0x4D, offset: 0x4D, size: 0x8, addend: 0x0, symName: _fs, symBinAddr: 0x100008000, symSize: 0x0 }
+  - { offsetInCU: 0x31F, offset: 0x31F, size: 0x8, addend: 0x0, symName: _mapfs, symObjAddr: 0x0, symBinAddr: 0x1000015EC, symSize: 0x70 }
+  - { offsetInCU: 0x343, offset: 0x343, size: 0x8, addend: 0x0, symName: _unmapfs, symObjAddr: 0x70, symBinAddr: 0x10000165C, symSize: 0x28 }
+  - { offsetInCU: 0x358, offset: 0x358, size: 0x8, addend: 0x0, symName: _print_manifest, symObjAddr: 0x98, symBinAddr: 0x100001684, symSize: 0x24C }
+  - { offsetInCU: 0x3A6, offset: 0x3A6, size: 0x8, addend: 0x0, symName: _initialize_manifest, symObjAddr: 0x2E4, symBinAddr: 0x1000018D0, symSize: 0x168 }
+  - { offsetInCU: 0x3EA, offset: 0x3EA, size: 0x8, addend: 0x0, symName: _update_manifest, symObjAddr: 0x44C, symBinAddr: 0x100001A38, symSize: 0x21C }
+  - { offsetInCU: 0x43C, offset: 0x43C, size: 0x8, addend: 0x0, symName: _create_segment, symObjAddr: 0x668, symBinAddr: 0x100001C54, symSize: 0x2E0 }
+  - { offsetInCU: 0x4DE, offset: 0x4DE, size: 0x8, addend: 0x0, symName: _formatfs, symObjAddr: 0x948, symBinAddr: 0x100001F34, symSize: 0x28 }
+  - { offsetInCU: 0x4F3, offset: 0x4F3, size: 0x8, addend: 0x0, symName: _loadfs, symObjAddr: 0x970, symBinAddr: 0x100001F5C, symSize: 0x4 }
+  - { offsetInCU: 0x508, offset: 0x508, size: 0x8, addend: 0x0, symName: _get_segname, symObjAddr: 0x974, symBinAddr: 0x100001F60, symSize: 0xA8 }
+  - { offsetInCU: 0x54C, offset: 0x54C, size: 0x8, addend: 0x0, symName: _get_seg_id, symObjAddr: 0xA1C, symBinAddr: 0x100002008, symSize: 0x10C }
+  - { offsetInCU: 0x5AD, offset: 0x5AD, size: 0x8, addend: 0x0, symName: _print_directory_entries, symObjAddr: 0xB28, symBinAddr: 0x100002114, symSize: 0x2DC }
+  - { offsetInCU: 0x6AA, offset: 0x6AA, size: 0x8, addend: 0x0, symName: _lsfs, symObjAddr: 0xE04, symBinAddr: 0x1000023F0, symSize: 0x1C }
+  - { offsetInCU: 0x6C0, offset: 0x6C0, size: 0x8, addend: 0x0, symName: _extract_number, symObjAddr: 0xE20, symBinAddr: 0x10000240C, symSize: 0x6C }
+  - { offsetInCU: 0x708, offset: 0x708, size: 0x8, addend: 0x0, symName: _create_entry, symObjAddr: 0xE8C, symBinAddr: 0x100002478, symSize: 0x7A4 }
+  - { offsetInCU: 0x8C1, offset: 0x8C1, size: 0x8, addend: 0x0, symName: _parse_path, symObjAddr: 0x1630, symBinAddr: 0x100002C1C, symSize: 0xB8 }
+  - { offsetInCU: 0x927, offset: 0x927, size: 0x8, addend: 0x0, symName: _search_inode_in_directory_entry, symObjAddr: 0x16E8, symBinAddr: 0x100002CD4, symSize: 0x2E4 }
+  - { offsetInCU: 0xA1D, offset: 0xA1D, size: 0x8, addend: 0x0, symName: _add_new_file, symObjAddr: 0x19CC, symBinAddr: 0x100002FB8, symSize: 0x19C }
+  - { offsetInCU: 0xA9D, offset: 0xA9D, size: 0x8, addend: 0x0, symName: _addfilefs, symObjAddr: 0x1B68, symBinAddr: 0x100003154, symSize: 0x1B8 }
+  - { offsetInCU: 0xB58, offset: 0xB58, size: 0x8, addend: 0x0, symName: _removefilefs, symObjAddr: 0x1D20, symBinAddr: 0x10000330C, symSize: 0x10 }
+  - { offsetInCU: 0xB7E, offset: 0xB7E, size: 0x8, addend: 0x0, symName: _extractfilefs, symObjAddr: 0x1D30, symBinAddr: 0x10000331C, symSize: 0x10 }
+  - { offsetInCU: 0x26, offset: 0xDC5, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x10000332C, symSize: 0x490 }
+  - { offsetInCU: 0x41, offset: 0xDE0, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x0, symBinAddr: 0x10000332C, symSize: 0x490 }
+  - { offsetInCU: 0x158, offset: 0xEF7, size: 0x8, addend: 0x0, symName: _exitusage, symObjAddr: 0x490, symBinAddr: 0x1000037BC, symSize: 0x3C }
+  - { offsetInCU: 0x17C, offset: 0xF1B, size: 0x8, addend: 0x0, symName: _zerosize, symObjAddr: 0x4CC, symBinAddr: 0x1000037F8, symSize: 0x54 }
 ...
