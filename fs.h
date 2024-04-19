@@ -57,7 +57,9 @@ typedef struct Superblock{
 }Superblock;
 
 typedef struct freeblocklist{
+  // char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
   char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
+
 }freeblocklist;
 
 typedef struct inode{
@@ -109,4 +111,21 @@ void removefilefs(char* fname);
 void extractfilefs(char* fname);
 void print_entries();
 
+void print_manifest();
+char * initialize_manifest();
+char* update_manifest(int type);
+void create_segment(int type, int num);
+char * get_segname(int seg_id);
+int get_seg_id(char* seg_name);
+void print_directory_entries(int dir_inode, int indent);
+int extract_number(const char* str);
+void mark_inode(int inode_num, int use);
+int create_directory(const char* name, int old_inode);
+char** parse_path(const char* path, int* num_elements);
+int search_inode_in_directory_entry(int current_inode, char* name);
+int find_unused_inode(int type);
+void add_directory_entry_in_parent(int parent_inode, int child_inode, char* name, int type);
+void add_new_file(int dir_inode, char* fpath);
+int get_inode_to_last_directory(char* fpath, int create_new);
+void mark_unused_inode_in_directory_entry(int dir_inode, int file_inode);
 #endif
