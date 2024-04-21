@@ -22,7 +22,8 @@ extern unsigned char* fs;
 #define MAX_FILENAME_LEN 256
 #define MAX_ENTRIES_PER_BLOCK 1
 #define INODESPERSEG 10
-#define BLOCKSPERSEG ((SEGMENT_SIZE - sizeof(Superblock) - sizeof(freeblocklist) - sizeof(inode) * INODESPERSEG) / sizeof(block))
+// #define BLOCKSPERSEG ((SEGMENT_SIZE - sizeof(Superblock) - sizeof(freeblocklist) - sizeof(inode) * INODESPERSEG) / sizeof(block))
+#define BLOCKSPERSEG 1020
 #define MAX_ENTRIES 50
 
 enum EntryType 
@@ -59,7 +60,7 @@ typedef struct Superblock{
 typedef struct freeblocklist{
   // char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
   // char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
-  char bitmap[(BLOCK_SIZE/4)-4];
+  char bitmap[BLOCKSPERSEG];
 
 }freeblocklist;
 
@@ -67,7 +68,7 @@ typedef struct inode{
   int inuse;
   int type;
   int size;
-  int blocks[(BLOCK_SIZE/4)-4];
+  int blocks[BLOCKSPERSEG];
   int indirect;
   int dindirect;
   int tindirect;
@@ -98,7 +99,7 @@ typedef struct Segment{
   Superblock SB;
   freeblocklist FBL;
   inode inodes[INODESPERSEG];
-  block blocks[(BLOCK_SIZE/4)-4];
+  block blocks[BLOCKSPERSEG];
 }Segment;
 
 void initialize_and_write_file_system();

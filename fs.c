@@ -790,23 +790,26 @@ void get_empty_blocks(int num_blocks, int* blocks, int type)
         }
         fread(seg, sizeof(Segment), 1, file);
         fbl = &seg->FBL;
+        fclose(file);
+
         if(seg->type != type)
         {
             continue;
         }
-        for( j = 0; j < ((SEGMENT_SIZE/BLOCK_SIZE)/8); j++)
+        for( j = 0; j < BLOCKSPERSEG; j++)
         {
             if (fbl->bitmap[j] == -1)
             {
-                blocks[count] = i * 1000 + j;
+                blocks[count] = i * 10000 + j;
+                printf("Found free block at segment %d, block %d with block index %d\n", i, j, blocks[count-1]);
                 count++;
+                if(count == num_blocks)
+                {
+                    return;
+                }
             }
         }
-        fclose(file);
-        if(count == num_blocks)
-        {
-            break;
-        }
+
     }
     if(count < num_blocks)
     {
@@ -825,7 +828,7 @@ void get_empty_blocks(int num_blocks, int* blocks, int type)
     {
         for(int i = 0; i < (BLOCK_SIZE/4)-4; i++)
         {
-            blocks[count] = seg_id2 * 1000 + i;
+            blocks[count] = seg_id2 * 10000 + i;
             count++;
         }
         if (count == num_blocks)
@@ -855,8 +858,8 @@ void get_empty_blocks(int num_blocks, int* blocks, int type)
 void write_file_to_block(char* buffer, int block, int bytes_to_read)
 {
     Segment *seg= (Segment *)malloc(sizeof(Segment));
-    int segment_id = block / 1000;
-    int block_index = block % 1000;
+    int segment_id = block / 10000;
+    int block_index = block % 10000;
     char filepath[255];
     char* seg_name = (char *)malloc(255);
     seg_name = get_segname(segment_id);
@@ -936,8 +939,8 @@ void update_FBL(int* blocks, int num_blocks)
 {
     for(int i = 0; i < num_blocks; i++)
     {
-        int segment_id = blocks[i] / 1000;
-        int block_index = blocks[i] % 1000;
+        int segment_id = blocks[i] / 10000;
+        int block_index = blocks[i] % 10000;
         Segment *seg= (Segment *)malloc(sizeof(Segment));
         char filepath[255];
         char* seg_name = (char *)malloc(255);
@@ -1031,17 +1034,11 @@ void add_new_file(int dir_inode, char* fpath) {
 
     get_empty_blocks(num_blocks, blocks, DATA);
 
-    printf("Count of avaibale blocks");
-    int count = 0;
-    for (int i = 0; i < (SEGMENT_SIZE/BLOCK_SIZE)/8; i++) 
-    {
-        count ++;
+  
+    printf("Found Blocks: ");
+    for (int i = 0; i < num_blocks; i++) {
+        printf("%d ", blocks[i]);
     }
-    printf("Count of avaibale blocks %d", count);
-    // printf("Found Blocks: ");
-    // for (int i = 0; i < num_blocks; i++) {
-    //     printf("%d ", blocks[i]);
-    // }
 
     // Step 5: Write the file data to the blocks
     write_file_to_fs(source_file, file_size, blocks);
@@ -1098,7 +1095,7 @@ void addfilefs(char* fspath, char *fpath)
     //     printf("%d: %s\n", i, dir_name[i]);
     //     // add_entry_to_root_directory(dir_name[i], i+1);
     // }
-
+    // printf("Blocks per seg: %lu\n", BLOCKSPERSEG);
     int current_inode = get_inode_to_last_directory(fspath, 1);
     add_new_file(current_inode, fpath);
     // FILE *file = fopen("segments/DIR_1", "rb");
@@ -1168,7 +1165,7 @@ void mark_unused_inode_in_directory_entry(int dir_inode, int file_inode)
     inode *ind = (inode *)malloc(sizeof(inode));
     *ind = seg->inodes[inode_index];
 
-    for (int i = 0; i < (BLOCK_SIZE/4)-4; i++)
+    for (int i = 0; i < BLOCKSPERSEG; i++)
     {
         if(ind->blocks[i] != -1)
         {
@@ -1291,7 +1288,9 @@ void get_blocks_from_inode(int file_inode, int* blocks)
 //}
     
 
-void extractfilefs(char* fname) {
+void extractfilefs(char* fname) 
+{
+    printf("Extracting file: %s\n", fname);
     char dir[256];
     char file[256];
     split_path(fname, dir, file);
@@ -1309,11 +1308,17 @@ void extractfilefs(char* fname) {
     }
     int *blocks = (int *)malloc(1000 * sizeof(int));
     get_blocks_from_inode(file_inode, blocks);
-    for (int i = 0; i < ((BLOCK_SIZE/4)-4); i++) {
+    printf("Blocks for file inode %d: ", file_inode);
+    for (int i = 0; i < 1000; i++) {
+        if (blocks[i] != -1) {
+            printf("%d ", blocks[i]);
+        }
+    }
+    for (int i = 0; i < BLOCKSPERSEG; i++) {
         if (blocks[i] != -1) {
             Segment *seg = (Segment *)malloc(sizeof(Segment));
-            int segment_id = blocks[i] / 1000;
-            int block_index = blocks[i] % 1000;
+            int segment_id = blocks[i] / 10000;
+            int block_index = blocks[i] % 10000;
             char filepath[255];
             char* seg_name = (char *)malloc(255);
             seg_name = get_segname(segment_id);

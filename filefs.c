@@ -101,11 +101,6 @@ int main(int argc, char** argv){
             // printf("Option -e is present\n");
             extract = 1;
             toextract = strdup(argv[2]);
-            if (strcmp(argv[3],">") == 0)
-            {
-              // filefsname = 1;
-              copyname = strdup(argv[4]);
-            }
         } 
         else if (strcmp(argv[1], "-D") == 0) 
         {
