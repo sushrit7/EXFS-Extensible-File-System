@@ -58,7 +58,8 @@ typedef struct Superblock{
 
 typedef struct freeblocklist{
   // char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
-  char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
+  // char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
+  char bitmap[(BLOCK_SIZE/4)-4];
 
 }freeblocklist;
 
