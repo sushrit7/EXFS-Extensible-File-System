@@ -187,7 +187,7 @@ void create_segment(int type, int num)
     {
         seg->inodes[i].type = type;
         seg->inodes[i].inuse = 0;
-        for (int j = 0; j < (BLOCK_SIZE/4)-4; j++)
+        for (int j = 0; j < BLOCKSPERSEG; j++)
         {
             seg->inodes[i].blocks[j] = -1;
         }
@@ -288,7 +288,7 @@ void print_directory_entries(int dir_inode, int indent)
     inode *ind = (inode *)malloc(sizeof(inode));
     *ind = seg->inodes[inode_index];
     // printf("For Inode: %d\n", dir_inode);
-    for (int i = 0; i < ((BLOCK_SIZE/4)-4); i++)
+    for (int i = 0; i < BLOCKSPERSEG; i++)
     {
         // printf("Block vaues = %d\n", ind->blocks[i]);
         if(ind->blocks[i] != -1)
@@ -475,7 +475,7 @@ int create_directory(const char* name, int old_inode)
         //Finding free block and marking it as used
         int found_free_block = 0;
         int k;
-        for (k = 0; k < ((SEGMENT_SIZE/BLOCK_SIZE)/8); k++)
+        for (k = 0; k < BLOCKSPERSEG; k++)
         {
             if(seg->FBL.bitmap[k] == -1)
             {
@@ -496,7 +496,7 @@ int create_directory(const char* name, int old_inode)
         //Flagging the block used for that inode
         // for (int x = 0; x < BLOCKSPERSEG; x++)
         int x =0;
-        for (int x = 0; x < (BLOCK_SIZE/4)-4; x++)
+        for (int x = 0; x < BLOCKSPERSEG; x++)
         {
             if(seg->inodes[inode_index].blocks[x] == -1)
             {
@@ -565,7 +565,7 @@ char** parse_path(const char* path, int* num_elements) {
 
 int search_inode_in_directory_entry(int current_inode, char* name)
 {
-    printf("Searching in inode %d in for %s \n", current_inode, name);
+    // printf("Searching in inode %d in for %s \n", current_inode, name);
     Segment *seg= (Segment *)malloc(sizeof(Segment));
     int segment_no = current_inode / 10;
     int inode_index = current_inode % 10;
@@ -586,7 +586,7 @@ int search_inode_in_directory_entry(int current_inode, char* name)
     inode *ind = (inode *)malloc(sizeof(inode));
     *ind = seg->inodes[inode_index];
 
-    for (int i = 0; i < (BLOCK_SIZE/4)-4; i++)
+    for (int i = 0; i < BLOCKSPERSEG; i++)
     {
         if(ind->blocks[i] != -1)
         {
@@ -594,14 +594,14 @@ int search_inode_in_directory_entry(int current_inode, char* name)
             memcpy(entry_ptr, &(seg->blocks[ind->blocks[i]]), sizeof(DirectoryEntry));
             if(strcmp(entry_ptr->name, name) == 0)
             {
-                printf("Found search entry in block %d with name: %s and inode %d\n", ind->blocks[i], entry_ptr->name, entry_ptr->inodenum);
+                // printf("Found search entry in block %d with name: %s and inode %d\n", ind->blocks[i], entry_ptr->name, entry_ptr->inodenum);
                 // printf("Found search entry in block %d with name: %s and inode %d\n", ind->blocks[i], entry_ptr->name, entry_ptr->inodenum);
                 new_inode = entry_ptr->inodenum;
                 break;
             }
         }
     }
-    printf("%s not found in inode %d\n", name, current_inode);
+    // printf("%s not found in inode %d\n", name, current_inode);
     free(ind);
     free(seg);
     return new_inode;
@@ -704,7 +704,7 @@ void add_directory_entry_in_parent(int parent_inode, int child_inode, char* name
     //Finding free block and marking it as used
     int found_free_block = 0;
     int k;
-    for (k = 0; k < ((SEGMENT_SIZE/BLOCK_SIZE)/8); k++)
+    for (k = 0; k < BLOCKSPERSEG; k++)
     {
         if(seg->FBL.bitmap[k] == -1)
         {
@@ -723,7 +723,7 @@ void add_directory_entry_in_parent(int parent_inode, int child_inode, char* name
 
     //Flagging the block used for that inode
     int x = 0;
-    for (int x = 0; x < (BLOCK_SIZE/4)-4; x++)
+    for (int x = 0; x < BLOCKSPERSEG; x++)
     {
         if(seg->inodes[inode_index].blocks[x] == -1)
         {
@@ -758,6 +758,232 @@ void add_directory_entry_in_parent(int parent_inode, int child_inode, char* name
     free(seg);
 
 }
+
+void get_empty_blocks(int num_blocks, int* blocks, int type)
+{
+    Segment *seg= (Segment *)malloc(sizeof(Segment));
+    Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
+    FILE *manifest = fopen("segments/manifest", "rb+");
+    if (!manifest) {
+        perror("Error opening file system file");
+        return;
+    }
+    fread(mf, sizeof(Manifest), 1, manifest);
+    fclose(manifest);
+
+    int i;
+    int j;
+    char* seg_name = (char *)malloc(255);
+
+    freeblocklist *fbl = (freeblocklist *)malloc(sizeof(freeblocklist));
+    int count = 0;
+    for (i = 0; i < mf->MH.numsegs; i++)
+    {
+        seg_name = get_segname(i);
+        char* path = (char *)malloc(255);
+        sprintf(path, "segments/%s", seg_name);
+        FILE *file = fopen(path, "rb");
+        if (!file) 
+        {
+            perror("Error opening DIR_ file");
+            return;
+        }
+        fread(seg, sizeof(Segment), 1, file);
+        fbl = &seg->FBL;
+        fclose(file);
+
+        if(seg->type != type)
+        {
+            continue;
+        }
+        for( j = 0; j < BLOCKSPERSEG; j++)
+        {
+            if (fbl->bitmap[j] == -1)
+            {
+                blocks[count] = i * 10000 + j;
+                printf("Found free block at segment %d, block %d with block index %d\n", i, j, blocks[count-1]);
+                count++;
+                if(count == num_blocks)
+                {
+                    return;
+                }
+            }
+        }
+
+    }
+    if(count < num_blocks)
+    {
+        create_segment(type, -1);
+    FILE *manifest2 = fopen("segments/manifest", "rb+");
+    if (!manifest2) {
+        perror("Error opening file system file");
+        return;
+    }
+    fread(mf, sizeof(Manifest), 1, manifest2);
+    fclose(manifest2);
+    int seg_id2 = mf->MH.numsegs - 1;
+    int remaining_blocks = num_blocks - count;
+    int found_all_blocks = 0;
+    while (!found_all_blocks)
+    {
+        for(int i = 0; i < BLOCKSPERSEG; i++)
+        {
+            blocks[count] = seg_id2 * 10000 + i;
+            count++;
+        }
+        if (count == num_blocks)
+        {
+            found_all_blocks = 1;
+        }
+        else
+        {
+            create_segment(type, -1);
+            FILE *manifest3 = fopen("segments/manifest", "rb+");
+            if (!manifest3) {
+                perror("Error opening file system file");
+                return;
+            }
+            fread(mf, sizeof(Manifest), 1, manifest3);
+            fclose(manifest3);
+            seg_id2 = mf->MH.numsegs - 1;
+        }
+    }
+    
+    }
+    // get_empty_blocks(num_blocks - count, blocks + count, type);
+   
+    // free(fbl);
+}
+
+// void write_file_to_block(char* buffer, int block, int bytes_to_read)
+// {
+//     printf("Writing to block %d\n", block);
+//     Segment *seg= (Segment *)malloc(sizeof(Segment));
+//     int segment_id = block / 10000;
+//     int block_index = block % 10000;
+//     printf("Segment id: %d, Block index: %d\n", segment_id, block_index);
+//     char filepath[255];
+//     char* seg_name = (char *)malloc(255);
+//     seg_name = get_segname(segment_id);
+//     printf("Segment name: %s\n", seg_name);
+//     snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+//     FILE *file = fopen(filepath, "rb");
+//     if (!file) {
+//         perror("Error opening file system file");
+//         return;
+//     }
+//     fseek(file, 0, SEEK_SET);
+//     fread(seg, sizeof(Segment), 1, file);
+//     fclose(file);
+//     memcpy(seg->blocks[block_index].data, buffer, bytes_to_read);
+//     seg->FBL.bitmap[block_index] = 0;
+//     FILE *file2 = fopen(filepath, "rb+");
+//     if (!file2) {
+//         perror("Error opening file system file");
+//         return;
+//     }
+//     fwrite(seg, sizeof(Segment), 1, file2);
+//     fclose(file2);
+//     // free(seg);
+// }
+
+void write_file_to_block(char* buffer, int block, int bytes_to_read) {
+    printf("Writing to block %d\n", block);
+    Segment *seg = (Segment *)malloc(sizeof(Segment));
+    int segment_id = block / 10000;
+    int block_index = block % 10000;
+    printf("Segment id: %d, Block index: %d\n", segment_id, block_index);
+    char filepath[255];
+    char* seg_name = (char *)malloc(255);
+    seg_name = get_segname(segment_id); // Assuming get_segname returns a char*.
+    printf("Segment name: %s\n", seg_name);
+    snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+    // free(seg_name); // Free allocated memory for seg_name
+
+    FILE *file = fopen(filepath, "rb+");
+    if (!file) {
+        perror("Error opening file system file");
+        // free(seg); // Free allocated memory for seg if file opening fails
+        return;
+    }
+    fseek(file, 0, SEEK_SET);
+    fread(seg, sizeof(Segment), 1, file);
+    fclose(file);
+
+    // Write buffer content to the block's data
+    memcpy(seg->blocks[block_index].data, buffer, bytes_to_read);
+
+    // Mark the block as occupied in the bitmap
+    // int byte_index = block_index / 8;
+    // int bit_index = block_index % 8;
+    seg->FBL.bitmap[block_index] = 0;
+
+    FILE *file2 = fopen(filepath, "rb+");
+    if (!file2) {
+        perror("Error opening file system file");
+        // free(seg); // Free allocated memory for seg if file opening fails
+        return;
+    }
+    fseek(file2, 0, SEEK_SET);
+    fwrite(seg, sizeof(Segment), 1, file2);
+    fclose(file2);
+
+    // free(seg); // Free allocated memory for seg
+}
+
+
+void write_file_to_fs(FILE* source_file, int file_size, int* blocks) 
+{
+    int buffer_size = BLOCK_SIZE; // Buffer size is equal to block size
+    char* buffer = malloc(buffer_size * sizeof(char));
+
+    int remaining_bytes = file_size;
+    // int block_index = 0;
+    int block_array_index = 0; // Index to iterate over the blocks array
+    while (remaining_bytes > 0) {
+        // Read data from the source file into the buffer
+        int bytes_to_read = (remaining_bytes > buffer_size) ? buffer_size : remaining_bytes;
+        fread(buffer, sizeof(char), bytes_to_read, source_file);
+        write_file_to_block(buffer, blocks[block_array_index], bytes_to_read);
+        remaining_bytes -= bytes_to_read;
+        block_array_index++;
+    }
+
+    // free(buffer);
+}
+
+void update_inode_with_blocks(int inode_num, int* blocks, int num_blocks, int file_size)
+{
+    Segment *seg= (Segment *)malloc(sizeof(Segment));
+    int segment_id = inode_num / 10;
+    int inode_index = inode_num % 10;
+    char filepath[255];
+    char* seg_name = (char *)malloc(255);
+    seg_name = get_segname(segment_id);
+    snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+    FILE *file = fopen(filepath, "rb");
+    if (!file) {
+        perror("Error opening file system file");
+        return;
+    }
+    fseek(file, 0, SEEK_SET);
+    fread(seg, sizeof(Segment), 1, file);
+    fclose(file);
+    seg->inodes[inode_index].size = file_size;
+    for (int i = 0; i < num_blocks; i++)
+    {
+        seg->inodes[inode_index].blocks[i] = blocks[i];
+    }
+    FILE *file2 = fopen(filepath, "rb+");
+    if (!file2) {
+        perror("Error opening file system file");
+        return;
+    }
+    fwrite(seg, sizeof(Segment), 1, file2);
+    fclose(file2);
+    // free(seg);
+}
+
 
 void add_new_file(int dir_inode, char* fpath) {
     // Step 1: Finding free inode for data
@@ -795,18 +1021,7 @@ void add_new_file(int dir_inode, char* fpath) {
     inode *ind1 = (inode *)malloc(sizeof(inode));
     *ind1 = seg1->inodes[inode_index];
 
-    // Step 4: Calculate the number of blocks needed
-    fseek(source_file, 0, SEEK_END);
-    int file_size = ftell(source_file);
-    int num_blocks = file_size / BLOCK_SIZE;
-    if (file_size % BLOCK_SIZE != 0) 
-    {
-        num_blocks++;
-    }
-    printf("Number of blocks needed: %d\n", num_blocks);
-
-
-    //Add directory entry for the file in the parent directory
+     //Add directory entry for the file in the parent directory
     int num_elements;
     char** dir_name = parse_path(fpath, &num_elements);
     char fname[255];
@@ -823,13 +1038,45 @@ void add_new_file(int dir_inode, char* fpath) {
         add_directory_entry_in_parent(dir_inode, free_inode, fname, DATA);
     }
 
+    // Step 4: Calculate the number of blocks needed
+    fseek(source_file, 0, SEEK_END);
+    long file_size = ftell(source_file);
+    fseek(source_file, 0, SEEK_SET);
+    int num_blocks = file_size / BLOCK_SIZE;
+    if (file_size % BLOCK_SIZE != 0) 
+    {
+        num_blocks++;
+    }
+
+    printf("Number of blocks needed: %d\n", num_blocks);
+    int* blocks = malloc(num_blocks * sizeof(int));
+
+    get_empty_blocks(num_blocks, blocks, DATA);
+
+  
+    printf("Found Blocks: ");
+    for (int i = 0; i < num_blocks; i++) {
+        printf("%d ", blocks[i]);
+    }
+
+    // Step 5: Write the file data to the blocks
+    write_file_to_fs(source_file, file_size, blocks);
+
+    // Step 6: Update the inode with the blocks
+    update_inode_with_blocks(free_inode, blocks, num_blocks, file_size);
+
+    // Step 7: Update the FBL
+    // update_FBL(blocks, num_blocks);
+
+   
+
     //Free the allocated memory
     free(ind1);
     free(seg1);
     // free(seg_name);
     free(dir_name);
     fclose(source_file);
-
+    free(blocks);
     // 
 }
 
@@ -837,6 +1084,9 @@ int get_inode_to_last_directory(char* fpath, int create_new)
 {
     int num_elements;
     char** dir_name = parse_path(fpath, &num_elements);
+    // for (int i = 0; i < num_elements; i++) {
+    //     printf("Element %d: %s\n", i, dir_name[i]);
+    // }
     int current_inode = 0;
     int new_inode = -1;
     for (int i = 0; i < num_elements; i++) 
@@ -844,7 +1094,6 @@ int get_inode_to_last_directory(char* fpath, int create_new)
         new_inode = search_inode_in_directory_entry(current_inode, dir_name[i]);
         if (new_inode == -1) 
         {
-            // printf("Directory '%s' not found\n", dir_name[i]);
             if(create_new == 0)
             {
                 return -1;
@@ -858,43 +1107,9 @@ int get_inode_to_last_directory(char* fpath, int create_new)
 
 void addfilefs(char* fspath, char *fpath) 
 {
-    int num_elements;
-    char** dir_name = parse_path(fspath, &num_elements);
-
-    // printf("Number of elements: %d\n", num_elements);
-    // printf("Path elements:\n");
-    // for (int i = 0; i < num_elements; i++) {
-    //     printf("%d: %s\n", i, dir_name[i]);
-    //     // add_entry_to_root_directory(dir_name[i], i+1);
-    // }
-
-    int current_inode = get_inode_to_last_directory(fpath, 1);
+    int current_inode = get_inode_to_last_directory(fspath, 1);
     add_new_file(current_inode, fpath);
-    // FILE *file = fopen("segments/DIR_1", "rb");
-    // if (!file) {
-    //     perror("Error opening file system file");
-    //     return;
-    // }
-
-    // memcpy(&current_dir, fs->blocks[0].data , sizeof(Directory));
-    // for(int l = 0; l < num_elements; l++)
-    // {
-      
-    //     new_inode = search_inode_in_directory_entry(current_inode, dir_name[l]);
-    //     if (new_inode == -1 ) 
-    //     {
-    //         printf("Directory '%s' not found\n", dir_name[l]);
-    //         new_inode = create_directory(dir_name[l], current_inode);
-    //     }
-    //     current_inode = new_inode;
-    //     printf("Current inode: %d\n", current_inode);
-        
-    // }
-
-    //Add the file to the directory in the current directory
-    
-
-    // free(dir_name);
+   
 }
   
 
@@ -937,7 +1152,7 @@ void mark_unused_inode_in_directory_entry(int dir_inode, int file_inode)
     inode *ind = (inode *)malloc(sizeof(inode));
     *ind = seg->inodes[inode_index];
 
-    for (int i = 0; i < (BLOCK_SIZE/4)-4; i++)
+    for (int i = 0; i < BLOCKSPERSEG; i++)
     {
         if(ind->blocks[i] != -1)
         {
@@ -984,12 +1199,236 @@ void removefilefs(char* fname)
         printf("File not found\n");
         return;
     }
-    mark_unused_inode_in_directory_entry(dir_inode, file_inode);
     mark_inode(file_inode, 0);
+    mark_unused_inode_in_directory_entry(dir_inode, file_inode);
 
 }
 
+void get_blocks_from_inode(int file_inode, int* blocks) 
+{
+    Segment *seg = (Segment *)malloc(sizeof(Segment));
+    int segment_id = file_inode / 10;
+    int inode_index = file_inode % 10;
+    char filepath[255];
+    char* seg_name = (char *)malloc(255);
+    seg_name = get_segname(segment_id); // Assuming get_segname returns a char*.
+    snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+    FILE *file = fopen(filepath, "rb");
+    if (!file) {
+        perror("Error opening file system file");
+        free(seg_name); // Free allocated memory if file opening fails
+        return;
+    }
+    fseek(file, 0, SEEK_SET);
+    fread(seg, sizeof(Segment), 1, file);
+    fclose(file);
+    
+    inode *ind = &(seg->inodes[inode_index]); // Point to the inode directly
 
-void extractfilefs(char* fname)
-{}
+    // Copy block indices from the inode to the blocks array
+    // int i = 0;
+    for (int i = 0; i < BLOCKSPERSEG; i++) 
+    {
+        blocks[i] = ind->blocks[i];
+    }
 
+    // printf("%s", seg->blocks[0].data);
+    // free(seg_name); // Free allocated memory
+}
+
+
+// void extractfilefs(char* fname)
+// {
+//     char dir[256];
+//     char file[256];
+//     split_path(fname, dir, file);
+//     printf("Directory: %s\n", dir);
+//     printf("File: %s\n", file);
+//     int dir_inode = get_inode_to_last_directory(dir, 0);
+//     if (dir_inode == -1) 
+//     {
+//         printf("Directory not found\n");
+//         return;
+//     }
+//     int file_inode = search_inode_in_directory_entry(dir_inode, file);
+//     if (file_inode == -1) 
+//     {
+//         printf("File not found\n");
+//         return;
+//     }
+//     int *blocks = (int *)malloc(1000 * sizeof(int));
+//     get_blocks_from_inode(file_inode, blocks);
+//     for (int i = 0; i < 1000; i++)
+//     {
+//         if(blocks[i] != -1)
+//         {
+//             Segment *seg= (Segment *)malloc(sizeof(Segment));
+//             int segment_id = blocks[i] / 1000;
+//             int block_index = blocks[i] % 1000;
+//             char filepath[255];
+//             char* seg_name = (char *)malloc(255);
+//             seg_name = get_segname(segment_id);
+//             snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+//             FILE *file = fopen(filepath, "rb");
+//             if (!file) {
+//                 perror("Error opening file system file");
+//                 return;
+//             }
+//             fseek(file, 0, SEEK_SET);
+//             fread(seg, sizeof(Segment), 1, file);
+//             fclose(file);
+//             printf("%s", seg->blocks[block_index].data);
+//             free(seg);
+//         }
+//     }
+//}
+
+int get_file_size(int file_inode)
+{
+    Segment *seg = (Segment *)malloc(sizeof(Segment));
+    int segment_id = file_inode / 10;
+    int inode_index = file_inode % 10;
+    char filepath[255];
+    char* seg_name = (char *)malloc(255);
+    seg_name = get_segname(segment_id); // Assuming get_segname returns a char*.
+    snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+    FILE *file = fopen(filepath, "rb");
+    if (!file) {
+        perror("Error opening file system file");
+        free(seg_name); // Free allocated memory if file opening fails
+        return -1;
+    }
+    fseek(file, 0, SEEK_SET);
+    fread(seg, sizeof(Segment), 1, file);
+    fclose(file);
+    int file_size = seg->inodes[inode_index].size;
+    // free(seg);
+    return file_size;
+}
+
+// void extractfilefs(char* fname) 
+// {
+//     printf("Extracting file: %s\n", fname);
+//     char dir[256];
+//     char file[256];
+//     split_path(fname, dir, file);
+//     printf("Directory: %s\n", dir);
+//     printf("File: %s\n", file);
+//     int dir_inode = get_inode_to_last_directory(dir, 0);
+//     if (dir_inode == -1) {
+//         printf("Directory not found\n");
+//         return;
+//     }
+//     int file_inode = search_inode_in_directory_entry(dir_inode, file);
+//     if (file_inode == -1) {
+//         printf("File not found\n");
+//         return;
+//     }
+//     int *blocks = (int *)malloc(1000 * sizeof(int));
+//     get_blocks_from_inode(file_inode, blocks);
+//     printf("Blocks for file inode %d: ", file_inode);
+//     for (int i = 0; i < 1000; i++) {
+//         if (blocks[i] != -1) {
+//             printf("%d ", blocks[i]);
+//         }
+//     }
+//     int file_size = get_file_size(file_inode);
+//     printf("\n");
+//     printf("File contents:\n");
+
+//     int remaining_bytes = 0;
+//     for (int i = 0; i < BLOCKSPERSEG; i++) {
+//         if (blocks[i] != -1) {
+//             Segment *seg = (Segment *)malloc(sizeof(Segment));
+//             int segment_id = blocks[i] / 10000;
+//             int block_index = blocks[i] % 10000;
+//             printf("Segment id: %d, Block index: %d\n", segment_id, block_index);
+//             char filepath[255];
+//             char* seg_name = (char *)malloc(255);
+//             seg_name = get_segname(segment_id);
+//             printf("Segment name: %s\n", seg_name);
+//             snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+//             FILE *file = fopen(filepath, "rb");
+//             if (!file) {
+//                 perror("Error opening file system file");
+//                 return;
+//             }
+//             fseek(file, 0, SEEK_SET);
+//             fread(seg, sizeof(Segment), 1, file);
+//             fclose(file);
+//             printf("%s", seg->blocks[block_index].data);
+//             fwrite(seg->blocks[block_index].data, sizeof(char), BLOCK_SIZE, stdout);
+//             free(seg);
+//         }
+//     }
+// }
+void extractfilefs(char* fname) {
+    // printf("Extracting file: %s\n", fname);
+    char dir[256];
+    char file[256];
+    split_path(fname, dir, file);
+    // printf("Directory: %s\n", dir);
+    // printf("File: %s\n", file);
+    
+    // Check if directory exists
+    int dir_inode = get_inode_to_last_directory(dir, 0);
+    if (dir_inode == -1) {
+        printf("Directory not found\n");
+        return;
+    }
+    
+    // Check if file exists
+    int file_inode = search_inode_in_directory_entry(dir_inode, file);
+    if (file_inode == -1) {
+        printf("File not found\n");
+        return;
+    }
+    
+    // Retrieve file blocks and size
+    int *blocks = (int *)malloc(1000 * sizeof(int));
+    get_blocks_from_inode(file_inode, blocks);
+
+    // printf("Blocks for file inode %d: ", file_inode);
+    // for (int i = 0; i < 1000; i++) {
+    //     if (blocks[i] != -1) {
+    //         printf("%d ", blocks[i]);
+    //     }
+    // }
+    
+    int file_size = get_file_size(file_inode);
+    // printf("\nFile size: %d bytes\n", file_size);
+    // printf("File contents:\n");
+    // printf("File size: %d bytes\n", file_size);
+
+    char buffer[BLOCK_SIZE]; // Buffer to hold file contents
+    int remaining_bytes = file_size; // Track remaining bytes to read
+    for (int i = 0; i < BLOCKSPERSEG && remaining_bytes > 0; i++) 
+    {
+        if (blocks[i] != -1) {
+            Segment *seg = (Segment *)malloc(sizeof(Segment));
+            int segment_id = blocks[i] / 10000;
+            int block_index = blocks[i] % 10000;
+            // printf("Segment id: %d, Block index: %d\n", segment_id, block_index);
+            char filepath[255];
+            char* seg_name = get_segname(segment_id);
+            // printf("Segment name: %s\n", seg_name);
+            snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
+            FILE *file = fopen(filepath, "rb");
+            if (!file) {
+                perror("Error opening file system file");
+                return;
+            }
+            // fseek(file, block_index * BLOCK_SIZE, SEEK_SET);
+            // Read the remaining bytes or up to BLOCK_SIZE, whichever is smaller
+            int bytes_to_read = remaining_bytes < BLOCK_SIZE ? remaining_bytes : BLOCK_SIZE;
+            fread(seg, sizeof(Segment), 1, file);
+            fwrite(seg->blocks[block_index].data, sizeof(char), bytes_to_read, stdout);
+            fclose(file);
+            //free(seg);
+            remaining_bytes -= bytes_to_read;
+        }
+    }
+    free(blocks); // Free dynamically allocated memory
+}
+
+///set size to read
