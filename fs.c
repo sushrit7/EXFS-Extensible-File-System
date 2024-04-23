@@ -81,41 +81,7 @@ char * initialize_manifest()
     return dir_name;
 }
 
-// char* update_manifest(int type)
-// {
-//     char * seg_name;
-//     Manifest *mf = (Manifest *)malloc(sizeof(Manifest));
-//     FILE *manifest = fopen("segments/manifest", "rb+");
-//     if (!manifest) {
-//         perror("Error opening file system file");
-//         return NULL;
-//     }
-//     fread(mf, sizeof(Manifest), 1, manifest);
-//     mf->MH.numsegs++;
-//     if(type == DIR)
-//     {
-//         mf->MH.numdirectorysegs++;
-//         seg_name = (char *)malloc(255);
-//         sprintf(seg_name, "DIR_%d", mf->MH.numdirectorysegs);
-//     }
-//     else
-//     {
-//         mf->MH.numdatasegs++;
-//         seg_name = (char *)malloc(255);
-//         sprintf(seg_name, "DATA_%d", mf->MH.numdatasegs);
-//     }
-    
-//     mf->MH.numinodes += INODESPERSEG;
-//     mf->entries[mf->MH.numsegs - 1].type = type;
-//     printf("Segment name to be added: %s of type: %d\n", seg_name, type);
 
-//     strcpy(mf->entries[(mf->MH.numsegs) - 1].name, seg_name);
-//     fseek(manifest, 0, SEEK_SET);
-//     fwrite(mf, sizeof(Manifest), 1, manifest);
-//     fclose(manifest);
-//     free(mf);
-//     return seg_name;
-// }
 
 char* update_manifest(int type) {
     char* seg_name = (char*)malloc(255);
@@ -594,8 +560,6 @@ int search_inode_in_directory_entry(int current_inode, char* name)
             memcpy(entry_ptr, &(seg->blocks[ind->blocks[i]]), sizeof(DirectoryEntry));
             if(strcmp(entry_ptr->name, name) == 0)
             {
-                // printf("Found search entry in block %d with name: %s and inode %d\n", ind->blocks[i], entry_ptr->name, entry_ptr->inodenum);
-                // printf("Found search entry in block %d with name: %s and inode %d\n", ind->blocks[i], entry_ptr->name, entry_ptr->inodenum);
                 new_inode = entry_ptr->inodenum;
                 break;
             }
@@ -618,9 +582,9 @@ int find_unused_inode(int type)
     }
     fread(mf, sizeof(Manifest), 1, manifest);
     fclose(manifest);
-    if(type == DIR && mf->MH.numdatasegs == 0)
+    if(type == DATA && mf->MH.numdatasegs == 0)
     {
-        create_segment(DATA, 1);
+        create_segment(DATA, -1);
     }
 
     int i;
@@ -813,7 +777,7 @@ void get_empty_blocks(int num_blocks, int* blocks, int type)
     }
     if(count < num_blocks)
     {
-        create_segment(type, -1);
+    create_segment(type, -1);
     FILE *manifest2 = fopen("segments/manifest", "rb+");
     if (!manifest2) {
         perror("Error opening file system file");
@@ -830,6 +794,11 @@ void get_empty_blocks(int num_blocks, int* blocks, int type)
         {
             blocks[count] = seg_id2 * 10000 + i;
             count++;
+            if (count == num_blocks)
+            {
+                found_all_blocks = 1;
+                break;
+            }
         }
         if (count == num_blocks)
         {
@@ -850,42 +819,8 @@ void get_empty_blocks(int num_blocks, int* blocks, int type)
     }
     
     }
-    // get_empty_blocks(num_blocks - count, blocks + count, type);
-   
-    // free(fbl);
 }
 
-// void write_file_to_block(char* buffer, int block, int bytes_to_read)
-// {
-//     printf("Writing to block %d\n", block);
-//     Segment *seg= (Segment *)malloc(sizeof(Segment));
-//     int segment_id = block / 10000;
-//     int block_index = block % 10000;
-//     printf("Segment id: %d, Block index: %d\n", segment_id, block_index);
-//     char filepath[255];
-//     char* seg_name = (char *)malloc(255);
-//     seg_name = get_segname(segment_id);
-//     printf("Segment name: %s\n", seg_name);
-//     snprintf(filepath, sizeof(filepath), "segments/%s", seg_name);
-//     FILE *file = fopen(filepath, "rb");
-//     if (!file) {
-//         perror("Error opening file system file");
-//         return;
-//     }
-//     fseek(file, 0, SEEK_SET);
-//     fread(seg, sizeof(Segment), 1, file);
-//     fclose(file);
-//     memcpy(seg->blocks[block_index].data, buffer, bytes_to_read);
-//     seg->FBL.bitmap[block_index] = 0;
-//     FILE *file2 = fopen(filepath, "rb+");
-//     if (!file2) {
-//         perror("Error opening file system file");
-//         return;
-//     }
-//     fwrite(seg, sizeof(Segment), 1, file2);
-//     fclose(file2);
-//     // free(seg);
-// }
 
 void write_file_to_block(char* buffer, int block, int bytes_to_read) {
     printf("Writing to block %d\n", block);
