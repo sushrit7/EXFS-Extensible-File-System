@@ -112,7 +112,7 @@ void addfilefs(char* fname, char *fpath);
 void removefilefs(char* fname);
 void extractfilefs(char* fname);
 void print_entries();
-
+void debugfs();
 void print_manifest();
 char * initialize_manifest();
 char* update_manifest(int type);

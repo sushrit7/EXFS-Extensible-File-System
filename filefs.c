@@ -35,87 +35,54 @@ int main(int argc, char** argv){
   int fd = -1;
   int newfs = 0;
   int filefsname = 0;
- 
+  int debug = 0;
 
   fsname = "segments/manifest";
-  // while ((opt = getopt(argc, argv, "-l:-r:-e:-f:")) != -1) {
-  //   switch (opt) {
-  //   case 'l':
-  //     list = 1;
-  //     break;
-  //   case 'a':
-  //     add = 1;
-  //     toadd = strdup(optarg);
-  //     break;
-  //   case 'r':
-  //     remove = 1;
-  //     toremove = strdup(optarg);
-  //     break;
-  //   case 'f':
-  //     filefsname = 1;
-  //     fsname = strdup(optarg);
-  //     break;
-  //   default:
-  //     exitusage(argv[0]);
-  //   }
-  // }
   
-  if (argc >= 2) {
-        // Check the second argument for the options
-        if (strcmp(argv[1], "-l") == 0) 
-        {
-            // printf("Option -l is present\n");
-            list = 1;
 
-        } else if (strcmp(argv[1], "-a") == 0) 
-        {
-            // printf("Option -a is present\n");
-            add = 1;
-            // toadd = strdup(optarg);
-            if (argc >= 3) 
-            {
-                toadd = strdup(argv[2]);
-            } 
-            else 
-            {
-                printf("Path for adding required!\n");
-            }
-            if (strcmp(argv[3],"-f") == 0)
-            {
-              // filefsname = 1;
-              fpath = strdup(argv[4]);
-            }
-            // if (strcmp(argv[5],"-d") == 0)
-            // {
-            //   print_entries();
-            // }
-        } 
-        else if (strcmp(argv[1], "-r") == 0) 
-        {
-            printf("Option -r is present\n");
-            remove = 1;
-            toremove = strdup(argv[2]);
-        } 
-        else if (strcmp(argv[1], "-e") == 0) 
-        {
-            // printf("Option -e is present\n");
-            extract = 1;
-            toextract = strdup(argv[2]);
-        } 
-        else if (strcmp(argv[1], "-D") == 0) 
-        {
-            printf("Option -D is present\n");
-        } 
-        else
-        {
-          exitusage(argv[0]);
+
+   if (argc < 2) {
+        exitusage(argv[0]);
+    }
+
+    if (strcmp(argv[1], "-l") == 0) {
+        list = 1;
+    } else if (strcmp(argv[1], "-a") == 0) {
+        add = 1;
+        if (argc >= 3) {
+            toadd = strdup(argv[2]);
+        } else {
+            printf("Path for adding required!\n");
+            exitusage(argv[0]);
         }
-    } 
-  
-  
-  // if (!filefsname){
-  //   exitusage(argv[0]);
-  // }
+        if (argc >= 5 && strcmp(argv[3], "-f") == 0) {
+            fpath = strdup(argv[4]);
+        } else {
+            printf("File path for adding required!\n");
+            exitusage(argv[0]);
+        }
+    } else if (strcmp(argv[1], "-r") == 0) {
+        remove = 1;
+        if (argc >= 3) {
+            toremove = strdup(argv[2]);
+        } else {
+            printf("Path for removing required!\n");
+            exitusage(argv[0]);
+        }
+    } else if (strcmp(argv[1], "-e") == 0) {
+        extract = 1;
+        if (argc >= 3) {
+            toextract = strdup(argv[2]);
+        } else {
+            printf("File path for extraction required!\n");
+            exitusage(argv[0]);
+        }
+    } else if (strcmp(argv[1], "-D") == 0) {
+        // printf("Option -D is present\n");
+        debug = 1;
+    } else {
+        exitusage(argv[0]);
+    }
 
     const char* folder = "segments";
     // Create the folder
@@ -162,9 +129,6 @@ int main(int argc, char** argv){
       newfs = 1;
     }
 
-
-
-  //  mapfs(fd);
   
   if (newfs){
     formatfs();
@@ -188,7 +152,9 @@ int main(int argc, char** argv){
     lsfs();
   }
 
-  // unmapfs();
+if(debug){
+    debugfs();
+  }
   
   return 0;
 }
