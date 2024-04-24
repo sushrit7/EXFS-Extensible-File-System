@@ -11,10 +11,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include<string.h>
+#include <openssl/sha.h>
+
 
 #define FSSIZE 10000000
-
-// using namespace std;
 
 extern unsigned char* fs;
 #define SEGMENT_SIZE 5 * 1024 * 1024 // 5MB
@@ -22,9 +22,11 @@ extern unsigned char* fs;
 #define MAX_FILENAME_LEN 256
 #define MAX_ENTRIES_PER_BLOCK 1
 #define INODESPERSEG 10
-// #define BLOCKSPERSEG ((SEGMENT_SIZE - sizeof(Superblock) - sizeof(freeblocklist) - sizeof(inode) * INODESPERSEG) / sizeof(block))
 #define BLOCKSPERSEG 1020
 #define MAX_ENTRIES 50
+#define HASH_SIZE SHA256_DIGEST_LENGTH
+#define HASH_TABLE_SIZE 100000
+
 
 enum EntryType 
 {
@@ -58,10 +60,7 @@ typedef struct Superblock{
 }Superblock;
 
 typedef struct freeblocklist{
-  // char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
-  // char bitmap[(SEGMENT_SIZE/BLOCK_SIZE)/8];
   char bitmap[BLOCKSPERSEG];
-
 }freeblocklist;
 
 typedef struct inode{
@@ -85,15 +84,6 @@ typedef struct DirectoryEntry{
   int inuse;
 }DirectoryEntry;
 
-// typedef struct {
-//     char name[255]; // Name of the directory
-//     int num_entries; // Number of directory entries
-//     DirectoryEntry entries[MAX_ENTRIES_PER_BLOCK]; // Array of directory entries
-//     int inodenum; 
-//     int inuse;
-//     // Add any additional metadata if needed
-// } Directory;
-
 typedef struct Segment{
   int type;
   Superblock SB;
@@ -101,6 +91,18 @@ typedef struct Segment{
   inode inodes[INODESPERSEG];
   block blocks[BLOCKSPERSEG];
 }Segment;
+
+///EXTRA CREDIT///
+typedef struct {
+    int block_id;
+    unsigned char hash[HASH_SIZE];
+    int referenced;
+} hash_entries;
+
+typedef struct {
+    // hashheader header;
+    hash_entries entries[HASH_TABLE_SIZE];
+} hash_table;
 
 void initialize_and_write_file_system();
 void mapfs(int fd);
@@ -111,23 +113,60 @@ void lsfs();
 void addfilefs(char* fname, char *fpath);
 void removefilefs(char* fname);
 void extractfilefs(char* fname);
-void print_entries();
 void debugfs();
+
+//Print options:
+void print_directory_entries(int dir_inode, int indent);
+void print_entries();
 void print_manifest();
+void print_hash_table();
+
+
+//Manifest
 char * initialize_manifest();
 char* update_manifest(int type);
+
+//Segment
 void create_segment(int type, int num);
 char * get_segname(int seg_id);
 int get_seg_id(char* seg_name);
-void print_directory_entries(int dir_inode, int indent);
-int extract_number(const char* str);
+
+//Inode
 void mark_inode(int inode_num, int use);
-int create_directory(const char* name, int old_inode);
-char** parse_path(const char* path, int* num_elements);
-int search_inode_in_directory_entry(int current_inode, char* name);
+void mark_unused_inode_in_directory_entry(int dir_inode, int file_inode);
 int find_unused_inode(int type);
+void update_inode_with_blocks(int inode_num, int* blocks, int num_blocks, int file_size);
+void get_blocks_from_inode(int file_inode, int* blocks);
+
+
+//Directory Entires
+int create_directory(const char* name, int old_inode);
+int search_inode_in_directory_entry(int current_inode, char* name);
 void add_directory_entry_in_parent(int parent_inode, int child_inode, char* name, int type);
-void add_new_file(int dir_inode, char* fpath);
 int get_inode_to_last_directory(char* fpath, int create_new);
 void mark_unused_inode_in_directory_entry(int dir_inode, int file_inode);
+
+//Files
+void add_new_file(int dir_inode, char* fpath);
+void write_file_to_fs(FILE* source_file, int file_size, int* blocks); 
+int get_file_size(int file_inode);
+
+
+//Blocks
+void get_empty_blocks(int num_blocks, int* blocks, int type);
+void write_file_to_block(char* buffer, int block, int bytes_to_read);
+
+//Venti
+void initialize_hash_table();
+int venti(unsigned char* buffer_hash, int bytes_to_read, int* block);
+void calculate_hash(const unsigned char* buffer, size_t buffer_size, unsigned char* hash_result);
+void add_to_hash_table(unsigned char* buffer_hash, int block);
+void set_FBL_free(int block);
+void decrement_refrenced_count(int file_inode);
+
+//Helper
+char** parse_path(const char* path, int* num_elements);
+void split_path(const char *path, char *dir, char *file); 
+int extract_number(const char* str);
+void debug_directory_entries(int dir_inode, int indent);
 #endif

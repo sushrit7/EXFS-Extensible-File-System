@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/sushrit/Documents/1.SIUE/Courses/bexfs",
-      "program": "/Users/sushrit/Documents/1.SIUE/Courses/bexfs/build/Debug/outDebug"
+      "cwd": "/Users/sushrit/Documents/1.SIUE/Courses/Spring2024/OS/Project 2/EXFS-Extensible-File-System",
+      "program": "/Users/sushrit/Documents/1.SIUE/Courses/Spring2024/OS/Project 2/EXFS-Extensible-File-System/build/Debug/outDebug"
     }
   ]
 }
